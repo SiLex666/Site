@@ -1,1 +1,404 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Правовой Квиз</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #0d0d0d;
+    --paper: #f4f0e8;
+    --gold: #b8860b;
+    --red: #c0392b;
+    --green: #1a6b3a;
+    --line: #c8bfa0;
+  }
 
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'IBM Plex Mono', monospace;
+    min-height: 100vh;
+    padding: 2rem 1rem 4rem;
+    background-image:
+      repeating-linear-gradient(0deg, transparent, transparent 31px, var(--line) 31px, var(--line) 32px);
+    background-size: 100% 32px;
+  }
+
+  header {
+    text-align: center;
+    margin-bottom: 3rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 3px double var(--ink);
+  }
+
+  header h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(2rem, 6vw, 3.5rem);
+    font-weight: 900;
+    letter-spacing: -0.02em;
+    line-height: 1;
+  }
+
+  header .subtitle {
+    font-size: 0.7rem;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    margin-top: 0.5rem;
+    color: var(--gold);
+  }
+
+  .progress-bar {
+    display: flex;
+    justify-content: center;
+    gap: 6px;
+    margin-bottom: 2.5rem;
+  }
+
+  .progress-dot {
+    width: 10px; height: 10px;
+    border: 2px solid var(--ink);
+    border-radius: 50%;
+    transition: background 0.3s;
+  }
+
+  .progress-dot.active { background: var(--ink); }
+  .progress-dot.correct { background: var(--green); border-color: var(--green); }
+  .progress-dot.wrong { background: var(--red); border-color: var(--red); }
+
+  .card {
+    max-width: 720px;
+    margin: 0 auto;
+    background: #fff;
+    border: 2px solid var(--ink);
+    box-shadow: 6px 6px 0 var(--ink);
+    padding: 2rem;
+    position: relative;
+    animation: slideIn 0.4s cubic-bezier(.16,1,.3,1);
+  }
+
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .card-num {
+    font-size: 0.65rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 0.75rem;
+  }
+
+  .question {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(1rem, 3vw, 1.25rem);
+    font-weight: 700;
+    line-height: 1.5;
+    margin-bottom: 1.75rem;
+  }
+
+  .options {
+    display: grid;
+    gap: 0.65rem;
+  }
+
+  .option-btn {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    background: none;
+    border: 1.5px solid var(--line);
+    padding: 0.85rem 1rem;
+    text-align: left;
+    cursor: pointer;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.8rem;
+    line-height: 1.5;
+    color: var(--ink);
+    transition: border-color 0.15s, background 0.15s;
+  }
+
+  .option-btn:hover:not(:disabled) {
+    border-color: var(--ink);
+    background: var(--paper);
+  }
+
+  .option-btn:disabled { cursor: default; }
+
+  .option-btn .letter {
+    font-weight: 500;
+    min-width: 1.2rem;
+    color: var(--gold);
+  }
+
+  .option-btn.correct { border-color: var(--green); background: #e8f5ee; }
+  .option-btn.wrong   { border-color: var(--red);   background: #fdecea; }
+
+  .explanation {
+    margin-top: 1.25rem;
+    padding: 1rem;
+    border-left: 3px solid var(--ink);
+    font-size: 0.78rem;
+    line-height: 1.7;
+    background: var(--paper);
+    display: none;
+    animation: fadeIn 0.3s ease;
+  }
+
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+  .explanation.show { display: block; }
+
+  .explanation strong { color: var(--green); }
+  .explanation.wrong-exp strong { color: var(--red); }
+
+  .next-btn {
+    margin-top: 1.5rem;
+    width: 100%;
+    background: var(--ink);
+    color: var(--paper);
+    border: none;
+    padding: 0.9rem;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.8rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    cursor: pointer;
+    display: none;
+    transition: background 0.15s;
+  }
+
+  .next-btn:hover { background: #333; }
+  .next-btn.show { display: block; }
+
+  /* Results */
+  .results {
+    max-width: 720px;
+    margin: 0 auto;
+    text-align: center;
+    background: #fff;
+    border: 2px solid var(--ink);
+    box-shadow: 6px 6px 0 var(--ink);
+    padding: 3rem 2rem;
+    animation: slideIn 0.4s cubic-bezier(.16,1,.3,1);
+  }
+
+  .results h2 {
+    font-family: 'Playfair Display', serif;
+    font-size: 2.5rem;
+    font-weight: 900;
+    margin-bottom: 0.5rem;
+  }
+
+  .score-big {
+    font-size: 5rem;
+    font-weight: 700;
+    font-family: 'Playfair Display', serif;
+    color: var(--gold);
+    line-height: 1;
+    margin: 1rem 0;
+  }
+
+  .verdict {
+    font-size: 0.75rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    margin-bottom: 2rem;
+  }
+
+  .restart-btn {
+    background: var(--ink);
+    color: var(--paper);
+    border: none;
+    padding: 0.9rem 2.5rem;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.8rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    cursor: pointer;
+  }
+
+  .restart-btn:hover { background: #333; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Lex Quiz</h1>
+  <div class="subtitle">Правовой тест — уровень: сложный</div>
+</header>
+
+<div class="progress-bar" id="progressBar"></div>
+<div id="quizContainer"></div>
+
+<script>
+const questions = [
+  {
+    q: "В каком случае сделка, совершённая под влиянием обмана, может быть признана недействительной по российскому праву?",
+    options: [
+      "Только если обман совершён другой стороной сделки",
+      "Если обман совершён третьим лицом, и другая сторона об этом знала или должна была знать",
+      "Если обман совершён третьим лицом, независимо от осведомлённости другой стороны",
+      "Только если обман касается предмета сделки, но не личности контрагента"
+    ],
+    correct: 1,
+    explanation: "По ст. 179 ГК РФ, если обман совершён третьим лицом, сделка признаётся недействительной лишь при условии, что другая сторона знала или должна была знать об обмане. Если же обман исходит непосредственно от контрагента — сделка оспорима в любом случае."
+  },
+  {
+    q: "Что означает принцип «non bis in idem» в уголовном праве и закреплён ли он в Конституции РФ?",
+    options: [
+      "Никто не может быть осуждён дважды за одно и то же деяние; закреплён в ч. 1 ст. 50 Конституции РФ",
+      "Никто не обязан свидетельствовать против себя; закреплён в ст. 51 Конституции РФ",
+      "Обвиняемый считается невиновным до вступления приговора в силу; закреплён в ст. 49 Конституции РФ",
+      "Суд обязан толковать сомнения в пользу обвиняемого; в Конституции РФ прямо не закреплён"
+    ],
+    correct: 0,
+    explanation: "«Non bis in idem» — никто не может быть повторно осуждён за одно и то же преступление. В России этот принцип закреплён в ч. 1 ст. 50 Конституции РФ: «Никто не может быть повторно осуждён за одно и то же преступление»."
+  },
+  {
+    q: "Каков срок исковой давности по требованиям о применении последствий недействительности ничтожной сделки согласно ГК РФ?",
+    options: [
+      "Общий срок — 3 года, исчисляемый с момента заключения сделки",
+      "3 года с момента, когда лицо узнало или должно было узнать о начале исполнения сделки, но не более 10 лет со дня её начала исполнения",
+      "1 год как для оспоримых сделок",
+      "Срок исковой давности не распространяется на ничтожные сделки"
+    ],
+    correct: 1,
+    explanation: "По п. 1 ст. 181 ГК РФ срок исковой давности по требованиям о применении последствий недействительности ничтожной сделки — 3 года. Для лица, не являющегося стороной сделки, он исчисляется с момента, когда оно узнало о её исполнении, но не может превышать 10 лет со дня начала исполнения."
+  },
+  {
+    q: "Какое из следующих деяний образует состав преступления, предусмотренного ст. 285 УК РФ (злоупотребление должностными полномочиями)?",
+    options: [
+      "Использование должностным лицом своих полномочий вопреки интересам службы из корыстной или иной личной заинтересованности, повлёкшее существенное нарушение прав граждан",
+      "Любое нарушение должностной инструкции, повлёкшее ущерб",
+      "Получение взятки в виде денег за совершение законных действий по службе",
+      "Превышение должностных полномочий, повлёкшее тяжкие последствия"
+    ],
+    correct: 0,
+    explanation: "Ст. 285 УК РФ требует совокупности трёх признаков: 1) использование полномочий вопреки интересам службы; 2) корыстная или иная личная заинтересованность; 3) существенное нарушение прав и законных интересов. Превышение полномочий — отдельный состав по ст. 286 УК РФ."
+  },
+  {
+    q: "В чём заключается доктрина «снятия корпоративной вуали» (piercing the corporate veil) в российском праве?",
+    options: [
+      "Ликвидация юридического лица по решению суда за систематические нарушения закона",
+      "Привлечение контролирующих лиц к субсидиарной ответственности по долгам юридического лица при злоупотреблении корпоративной формой",
+      "Запрет на совмещение должности директора и участника в одном обществе",
+      "Обязательное раскрытие информации о бенефициарных владельцах компании"
+    ],
+    correct: 1,
+    explanation: "«Снятие корпоративной вуали» — привлечение участников (акционеров) или контролирующих лиц к ответственности по долгам компании, если они злоупотребляли принципом ограниченной ответственности. В России это реализуется через институт субсидиарной ответственности контролирующих должника лиц (Закон о банкротстве, ст. 61.10–61.11) и ст. 53.1 ГК РФ."
+  }
+];
+
+let current = 0;
+let score = 0;
+let answered = false;
+const dotStates = new Array(questions.length).fill('');
+
+function renderProgress() {
+  const bar = document.getElementById('progressBar');
+  bar.innerHTML = questions.map((_, i) => {
+    let cls = 'progress-dot';
+    if (dotStates[i] === 'correct') cls += ' correct';
+    else if (dotStates[i] === 'wrong') cls += ' wrong';
+    else if (i === current) cls += ' active';
+    return `<div class="${cls}"></div>`;
+  }).join('');
+}
+
+function renderQuestion() {
+  answered = false;
+  const q = questions[current];
+  const letters = ['А', 'Б', 'В', 'Г'];
+  document.getElementById('quizContainer').innerHTML = `
+    <div class="card">
+      <div class="card-num">Вопрос ${current + 1} из ${questions.length}</div>
+      <div class="question">${q.q}</div>
+      <div class="options">
+        ${q.options.map((opt, i) => `
+          <button class="option-btn" onclick="selectAnswer(${i})">
+            <span class="letter">${letters[i]}.</span>
+            <span>${opt}</span>
+          </button>
+        `).join('')}
+      </div>
+      <div class="explanation" id="explanation"></div>
+      <button class="next-btn" id="nextBtn" onclick="nextQuestion()">
+        ${current < questions.length - 1 ? 'Следующий вопрос →' : 'Результат →'}
+      </button>
+    </div>
+  `;
+  renderProgress();
+}
+
+function selectAnswer(idx) {
+  if (answered) return;
+  answered = true;
+  const q = questions[current];
+  const btns = document.querySelectorAll('.option-btn');
+  const exp = document.getElementById('explanation');
+
+  btns.forEach(b => b.disabled = true);
+  btns[q.correct].classList.add('correct');
+
+  if (idx === q.correct) {
+    score++;
+    dotStates[current] = 'correct';
+    exp.innerHTML = `<strong>✓ Верно!</strong> ${q.explanation}`;
+    exp.classList.add('show');
+  } else {
+    btns[idx].classList.add('wrong');
+    dotStates[current] = 'wrong';
+    exp.classList.add('wrong-exp');
+    exp.innerHTML = `<strong>✗ Неверно.</strong> ${q.explanation}`;
+    exp.classList.add('show');
+  }
+
+  document.getElementById('nextBtn').classList.add('show');
+  renderProgress();
+}
+
+function nextQuestion() {
+  current++;
+  if (current >= questions.length) {
+    showResults();
+  } else {
+    renderQuestion();
+  }
+}
+
+function showResults() {
+  const pct = Math.round((score / questions.length) * 100);
+  let verdict = '';
+  if (pct === 100) verdict = 'Блестяще — уровень правоведа';
+  else if (pct >= 80) verdict = 'Отлично — глубокое знание права';
+  else if (pct >= 60) verdict = 'Хорошо — есть над чем работать';
+  else if (pct >= 40) verdict = 'Удовлетворительно — нужно повторить';
+  else verdict = 'Необходимо серьёзно изучить материал';
+
+  document.getElementById('progressBar').style.display = 'none';
+  document.getElementById('quizContainer').innerHTML = `
+    <div class="results">
+      <h2>Тест завершён</h2>
+      <div class="score-big">${score}/${questions.length}</div>
+      <div class="verdict">${verdict}</div>
+      <button class="restart-btn" onclick="restart()">Пройти заново</button>
+    </div>
+  `;
+}
+
+function restart() {
+  current = 0; score = 0;
+  dotStates.fill('');
+  document.getElementById('progressBar').style.display = 'flex';
+  renderQuestion();
+}
+
+renderQuestion();
+</script>
+</body>
+</html
